@@ -65,25 +65,32 @@ fn get_vals(cards: &Vec<Card>) -> usize {
 }
 
 fn main() {
-    fs::File::create("money.txt").unwrap();
+    match fs::File::open("money.txt") {
+        Ok(_) => (),
+        Err(_) => { fs::File::create("money.txt").unwrap(); },
+    }
     let money = read_to_string("money.txt").unwrap();
     let money_int;
 
     match money.trim().parse::<usize>() {
         Ok(a) => money_int = a,
         Err(_) => {
+            println!("reset");
             fs::write("money.txt", b"100").unwrap();
             money_int = 100;
         }
     }
 
     println!("You have {}\n\nPlace your bet: ", money_int);
-    let mut bet: usize = 0;
+    let bet: usize;
     loop {
         match input().trim().parse() {
             Ok(n) => {
-                if n < money_int {
+                if n <= money_int {
                     bet = n;
+                } else {
+                    println!("You cannot bet more than you have.");
+                    continue;
                 }
                 break;
             }
@@ -117,20 +124,25 @@ fn main() {
             "n" => break,
             _ => continue,
         }
-        if get_vals(&user_cards) > 21 {
+        let val = get_vals(&user_cards);
+        if val > 21 {
             println!(
                 "You went over at {}! You now have ${}",
                 get_vals(&user_cards),
                 money_int - bet
             );
-            fs::write("money.txt", format!("{}", money_int - bet).as_bytes()).unwrap();
-            exit(1);
+            fs::write("money.txt", format!("{}\n", money_int - bet).as_bytes()).unwrap();
+            exit(0);
+        } else if val == 21 {
+            println!("You hit 21! You now have ${}", money_int + bet);
+            fs::write("money.txt", format!("{}\n", money_int + bet).as_bytes()).unwrap();
+            exit(0);
         }
     }
 
     if get_vals(&user_cards) > dealer_val || get_vals(&user_cards) == 21 {
         println!("You win! You now have ${}", money_int + bet);
-        fs::write("money.txt", format!("{}", money_int + bet).as_bytes()).unwrap();
+        fs::write("money.txt", format!("{}\n", money_int + bet).as_bytes()).unwrap();
     } else if dealer_val == get_vals(&user_cards) {
         println!("Tie at {}. You lost no money", dealer_val);
     } else {
@@ -140,6 +152,6 @@ fn main() {
             get_vals(&user_cards),
             money_int - bet
         );
-        fs::write("money.txt", format!("{}", money_int - bet).as_bytes()).unwrap();
+        fs::write("money.txt", format!("{}\n", money_int - bet).as_bytes()).unwrap();
     }
 }
