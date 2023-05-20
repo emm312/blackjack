@@ -65,6 +65,7 @@ impl RandCardGenerator {
             Card::Seven,
             Card::Eight,
             Card::Nine,
+            Card::Ten, // tens
             Card::Ten, // king
             Card::Ten, // queen
             Card::Ten, // jack
