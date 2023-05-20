@@ -15,7 +15,7 @@ fn input() -> String {
     ret
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Card {
     Ace = 1,
     Two = 2,
@@ -69,12 +69,7 @@ impl RandCardGenerator {
             Card::Ten, // king
             Card::Ten, // queen
             Card::Ten, // jack
-        ]
-            .iter()
-            .map(|card| vec![card, card, card, card])
-            .flatten()
-            .map(|e| *e)
-            .collect();
+        ].repeat(4);
 
         cards.shuffle(&mut rng);
 
@@ -90,8 +85,13 @@ impl RandCardGenerator {
 
 fn get_vals(cards: &Vec<Card>) -> usize {
     let mut ret = 0;
+    let mut has_ace = false;
     for card in cards {
         ret += *card as usize;
+        has_ace = (*card == Card::Ace) | has_ace;
+    }
+    if ret+10 < 21 && has_ace && ret < 21{
+        ret += 10;
     }
     ret
 }
