@@ -1,8 +1,4 @@
-#[macro_use]
-extern crate enum_primitive;
-extern crate num;
-use num::FromPrimitive;
-use rand::Rng;
+use rand::seq::SliceRandom;
 
 use std::{
     fmt::Display,
@@ -21,7 +17,7 @@ fn input() -> String {
 
 #[derive(Clone, Copy, Debug)]
 enum Card {
-    One = 1,
+    Ace = 1,
     Two = 2,
     Three = 3,
     Four = 4,
@@ -31,17 +27,13 @@ enum Card {
     Eight = 8,
     Nine = 9,
     Ten = 10,
-    Eleven = 11,
 }
 
-enum_from_primitive_impl! {
-  Card, One Two Three Four Five Six Seven Eight Nine Ten Eleven
-}
 
 impl Display for Card {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
-            Card::One => write!(f, "ace"),
+            Card::Ace => write!(f, "ace"),
             Card::Two => write!(f, "two"),
             Card::Three => write!(f, "three"),
             Card::Four => write!(f, "four"),
@@ -51,8 +43,49 @@ impl Display for Card {
             Card::Eight => write!(f, "eight"),
             Card::Nine => write!(f, "nine"),
             Card::Ten => write!(f, "king"),
-            Card::Eleven => write!(f, "ace"),
         }
+    }
+}
+
+struct RandCardGenerator {
+    cards: Vec<Card>,
+}
+
+impl RandCardGenerator {
+    fn new() -> RandCardGenerator {
+        let mut rng = rand::thread_rng();
+
+        let mut cards: Vec<Card> = vec![
+            Card::Ace,
+            Card::Two,
+            Card::Three,
+            Card::Four,
+            Card::Five,
+            Card::Six,
+            Card::Seven,
+            Card::Eight,
+            Card::Nine,
+            Card::Ten, // king
+            Card::Ten, // queen
+            Card::Ten, // jack
+        ]
+            .iter()
+            .map(|card| vec![card, card, card, card])
+            .flatten()
+            .map(|e| *e)
+            .collect();
+
+        cards.shuffle(&mut rng);
+
+        println!("{:?}", cards.len());
+
+        RandCardGenerator {
+            cards,
+        }
+    }
+
+    pub fn get_card(&mut self) -> Card {
+        self.cards.pop().unwrap() // UNWRAP SAFETY: Its impossible to pull 52 cards
     }
 }
 
@@ -67,7 +100,9 @@ fn get_vals(cards: &Vec<Card>) -> usize {
 fn main() {
     match fs::File::open("money.txt") {
         Ok(_) => (),
-        Err(_) => { fs::File::create("money.txt").unwrap(); },
+        Err(_) => {
+            fs::File::create("money.txt").unwrap();
+        }
     }
     let money = read_to_string("money.txt").unwrap();
     let money_int;
@@ -100,17 +135,21 @@ fn main() {
         }
         println!("Place your bet: ");
     }
-    let mut rng = rand::thread_rng();
+    let mut rng = RandCardGenerator::new();
     let mut dealer_cards = Vec::new();
     for _ in 0..5 {
-        let randnum = rng.gen_range(1..12);
-        if randnum + get_vals(&dealer_cards) < 21 {
-            dealer_cards.push(Card::from_usize(randnum).unwrap());
+        let card = rng.get_card();
+        if card as usize + get_vals(&dealer_cards) < 21 {
+            dealer_cards.push(card);
         }
     }
 
     let dealer_val = get_vals(&dealer_cards);
     let mut user_cards = Vec::new();
+    for _ in 0..2 {
+        let card = rng.get_card();
+        user_cards.push(card);
+    }
     loop {
         print!(
             "Your cards are: {:?} with a value of {}\nPick up? (y/n) ",
@@ -118,9 +157,9 @@ fn main() {
             get_vals(&user_cards)
         );
         io::stdout().flush().unwrap();
-        let randnum = rng.gen_range(1..12);
+        let card = rng.get_card();
         match input().to_lowercase().trim() {
-            "y" => user_cards.push(Card::from_i32(randnum).unwrap()),
+            "y" => user_cards.push(card),
             "n" => break,
             _ => continue,
         }
