@@ -78,8 +78,6 @@ impl RandCardGenerator {
 
         cards.shuffle(&mut rng);
 
-        println!("{:?}", cards.len());
-
         RandCardGenerator {
             cards,
         }
